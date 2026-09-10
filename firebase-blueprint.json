@@ -1,0 +1,497 @@
+{
+  "entities": {
+    "users": {
+      "title": "Users",
+      "description": "User accounts and store staff profiles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "roleId": { "type": "string" },
+        "departmentId": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "roles": {
+      "title": "Roles",
+      "description": "User role definitions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "permissionIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name"]
+    },
+    "permissions": {
+      "title": "Permissions",
+      "description": "System access rights",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "module": { "type": "string" }
+      },
+      "required": ["code", "name"]
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Store members, patients and customers",
+      "type": "object",
+      "properties": {
+        "memberCode": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "points": { "type": "number" },
+        "totalSpend": { "type": "number" },
+        "medicalHistoryNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone"]
+    },
+    "suppliers": {
+      "title": "Suppliers",
+      "description": "Vendor and supplier company records",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "companyName": { "type": "string" },
+        "taxId": { "type": "string" },
+        "licenseNumber": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["code", "companyName"]
+    },
+    "departments": {
+      "title": "Departments",
+      "description": "Store departments or stations",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" }
+      },
+      "required": ["name", "code"]
+    },
+    "categories": {
+      "title": "Categories",
+      "description": "Product categories (cannabis, kratom, food, general)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "type"]
+    },
+    "products": {
+      "title": "Products",
+      "description": "Product catalog items",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "cost": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "stockUnit": { "type": "string" },
+        "minStockAlert": { "type": "number font" }
+      },
+      "required": ["code", "name", "price"]
+    },
+    "product_variants": {
+      "title": "Product Variants",
+      "description": "Product size or flavor variations",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "variantName": { "type": "string" },
+        "price": { "type": "number" },
+        "sku": { "type": "string" }
+      },
+      "required": ["productId", "variantName"]
+    },
+    "product_batches": {
+      "title": "Product Batches",
+      "description": "Kratom or beverage boiling production batches",
+      "type": "object",
+      "properties": {
+        "batchNo": { "type": "string" },
+        "productName": { "type": "string" },
+        "producedVolumeLiters": { "type": "number" },
+        "yieldBottles": { "type": "number" },
+        "bottleSizeMl": { "type": "number" },
+        "leafWeightGrams": { "type": "number font" },
+        "totalCostThb": { "type": "number" },
+        "costPerLiterThb": { "type": "number" },
+        "costPerBottleThb": { "type": "number" },
+        "productionDate": { "type": "string" }
+      },
+      "required": ["batchNo", "productName"]
+    },
+    "product_lots": {
+      "title": "Product Lots",
+      "description": "Inventory product lots and expiry tracking",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "lotNumber": { "type": "string" },
+        "receivedDate": { "type": "string" },
+        "expiryDate": { "type": "string" },
+        "quantity": { "type": "number" }
+      },
+      "required": ["productId", "lotNumber"]
+    },
+    "ingredients": {
+      "title": "Ingredients",
+      "description": "Raw materials and recipe ingredients",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "unit": { "type": "string" },
+        "stockQty": { "type": "number" },
+        "costPerUnit": { "type": "number" }
+      },
+      "required": ["name", "unit"]
+    },
+    "recipes": {
+      "title": "Recipes",
+      "description": "Food and drink recipes (BOM)",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "recipeName": { "type": "string" },
+        "instructions": { "type": "string" }
+      },
+      "required": ["productId", "recipeName"]
+    },
+    "recipe_items": {
+      "title": "Recipe Items",
+      "description": "Ingredient components in a recipe",
+      "type": "object",
+      "properties": {
+        "recipeId": { "type": "string" },
+        "ingredientId": { "type": "string" },
+        "amount": { "type": "number" }
+      },
+      "required": ["recipeId", "ingredientId", "amount"]
+    },
+    "purchases": {
+      "title": "Purchases",
+      "description": "Purchase orders from suppliers",
+      "type": "object",
+      "properties": {
+        "poNumber": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string" },
+        "purchaseDate": { "type": "string" }
+      },
+      "required": ["poNumber", "supplierId"]
+    },
+    "purchase_items": {
+      "title": "Purchase Items",
+      "description": "Individual items inside a purchase order",
+      "type": "object",
+      "properties": {
+        "purchaseId": { "type": "string" },
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unitCost": { "type": "number" }
+      },
+      "required": ["purchaseId", "productId", "quantity"]
+    },
+    "sales": {
+      "title": "Sales",
+      "description": "Completed POS sales transactions",
+      "type": "object",
+      "properties": {
+        "receiptNo": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "cashierName": { "type": "string font" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["receiptNo", "total"]
+    },
+    "sale_items": {
+      "title": "Sale Items",
+      "description": "Items sold in a POS transaction",
+      "type": "object",
+      "properties": {
+        "saleId": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "price": { "type": "number" },
+        "quantity": { "type": "number font" }
+      },
+      "required": ["saleId", "productName", "quantity"]
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "Payment records for sales",
+      "type": "object",
+      "properties": {
+        "saleId": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string" },
+        "reference": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["saleId", "amount", "method"]
+    },
+    "stock": {
+      "title": "Stock",
+      "description": "Current stock levels per product or location",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "location": { "type": "string" }
+      },
+      "required": ["productId", "quantity"]
+    },
+    "stock_movements": {
+      "title": "Stock Movements",
+      "description": "Audit trail of stock increments, decrements and adjustments",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "movementType": { "type": "string" },
+        "qtyChange": { "type": "number" },
+        "reason": { "type": "string" },
+        "userName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "movementType", "qtyChange"]
+    },
+    "kitchen_orders": {
+      "title": "Kitchen Orders",
+      "description": "KDS orders for kitchen and bar station",
+      "type": "object",
+      "properties": {
+        "orderNo": { "type": "string font" },
+        "tableNo": { "type": "string" },
+        "orderType": { "type": "string" },
+        "overallStatus": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNo", "overallStatus"]
+    },
+    "kitchen_order_items": {
+      "title": "Kitchen Order Items",
+      "description": "Food & drink line items in KDS",
+      "type": "object",
+      "properties": {
+        "kitchenOrderId": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "station": { "type": "string" },
+        "status": { "type": "string" },
+        "customNotes": { "type": "string" }
+      },
+      "required": ["kitchenOrderId", "productName", "quantity"]
+    },
+    "discounts": {
+      "title": "Discounts",
+      "description": "Discount codes and rules",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountType": { "type": "string" },
+        "value": { "type": "number" }
+      },
+      "required": ["code", "value"]
+    },
+    "promotions": {
+      "title": "Promotions",
+      "description": "Marketing promotions and campaign rules",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["title"]
+    },
+    "expenses": {
+      "title": "Expenses",
+      "description": "Store operational expenses",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "recordedBy": { "type": "string" }
+      },
+      "required": ["date", "title", "amount"]
+    },
+    "documents": {
+      "title": "Documents",
+      "description": "Official government and compliance documents",
+      "type": "object",
+      "properties": {
+        "docNumber": { "type": "string" },
+        "docType": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "expiryDate": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["docNumber", "docType"]
+    },
+    "attachments": {
+      "title": "Attachments",
+      "description": "Uploaded file attachments",
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileType": { "type": "string" }
+      },
+      "required": ["fileName", "fileUrl"]
+    },
+    "audit_logs": {
+      "title": "Audit Logs",
+      "description": "System audit trail logs for GACP and FDA compliance",
+      "type": "object",
+      "properties": {
+        "userName": { "type": "string" },
+        "userRole": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "previousValue": { "type": "string" },
+        "newValue": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userName", "action", "details"]
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Store configuration and legal licenses",
+      "type": "object",
+      "properties": {
+        "shopName": { "type": "string" },
+        "taxId": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "cannabisLicenseNo": { "type": "string" },
+        "kratomFdaNo": { "type": "string" },
+        "foodLicenseNo": { "type": "string" },
+        "vatPercent": { "type": "number" },
+        "receiptFooter": { "type": "string" }
+      },
+      "required": ["shopName"]
+    },
+    "cannabis_products": {
+      "title": "Cannabis Products",
+      "description": "Cannabis flowers, extracts, tinctures, edibles specification",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "strain": { "type": "string" },
+        "type": { "type": "string" },
+        "thcPercent": { "type": "number" },
+        "cbdPercent": { "type": "number" },
+        "gacpCertificateNo": { "type": "string" },
+        "medicalNote": { "type": "string" }
+      },
+      "required": ["strain", "type"]
+    },
+    "cannabis_lots": {
+      "title": "Cannabis Lots",
+      "description": "Cannabis lot traceability with COA numbers and supplier link",
+      "type": "object",
+      "properties": {
+        "supplierId": { "type": "string" },
+        "strain": { "type": "string" },
+        "lotNumber": { "type": "string" },
+        "coaNumber": { "type": "string" },
+        "initialWeightGrams": { "type": "number" },
+        "remainingWeightGrams": { "type": "number" },
+        "receivedDate": { "type": "string" }
+      },
+      "required": ["lotNumber", "strain", "coaNumber"]
+    },
+    "cannabis_documents": {
+      "title": "Cannabis Documents",
+      "description": "Cannabis GACP, COA, transport and medical permits",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "docType": { "type": "string font" },
+        "issueDate": { "type": "string" },
+        "expiryDate": { "type": "string" },
+        "fileUrl": { "type": "string" }
+      },
+      "required": ["title", "docType"]
+    },
+    "cannabis_movements": {
+      "title": "Cannabis Movements",
+      "description": "Cannabis specific stock movement log for legal audit",
+      "type": "object",
+      "properties": {
+        "cannabisLotId": { "type": "string" },
+        "action": { "type": "string" },
+        "weightGrams": { "type": "number" },
+        "reason": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["cannabisLotId", "action", "weightGrams"]
+    },
+    "prescriptions": {
+      "title": "Prescriptions",
+      "description": "Medical cannabis prescriptions and traditional medicine doctor notes",
+      "type": "object",
+      "properties": {
+        "prescriptionNo": { "type": "string" },
+        "patientName": { "type": "string" },
+        "doctorName": { "type": "string" },
+        "licenseNo": { "type": "string" },
+        "diagnosis": { "type": "string" },
+        "issueDate": { "type": "string" }
+      },
+      "required": ["prescriptionNo", "patientName", "doctorName"]
+    },
+    "raw_material_sources": {
+      "title": "Raw Material Sources",
+      "description": "Origin farm and raw material provenance traceability records",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "materialName": { "type": "string" },
+        "cultivationType": { "type": "string" },
+        "location": { "type": "string" },
+        "province": { "type": "string" },
+        "standardCertificates": { "type": "array" },
+        "certNumber": { "type": "string" },
+        "certExpiryDate": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "phone": { "type": "string" },
+        "supplierId": { "type": "string" },
+        "supplierName": { "type": "string" },
+        "qualityGrade": { "type": "string" },
+        "testLabName": { "type": "string" },
+        "coaNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "notes": { "type": "string" },
+        "harvestSeason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "name", "category", "materialName"]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "POS TOON 81",
+  "description": "Multi-industry Thai POS system with real-time Firestore cloud synchronization for medical cannabis, kratom, kitchen display, and retail inventory management.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

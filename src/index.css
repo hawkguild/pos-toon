@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-50: var(--color-emerald-50, #ecfdf5);
+  --color-emerald-100: var(--color-emerald-100, #d1fae5);
+  --color-emerald-200: var(--color-emerald-200, #a7f3d0);
+  --color-emerald-300: var(--color-emerald-300, #6ee7b7);
+  --color-emerald-400: var(--color-emerald-400, #34d399);
+  --color-emerald-500: var(--color-emerald-500, #10b981);
+  --color-emerald-600: var(--color-emerald-600, #059669);
+  --color-emerald-700: var(--color-emerald-700, #047857);
+  --color-emerald-800: var(--color-emerald-800, #065f46);
+  --color-emerald-900: var(--color-emerald-900, #064e3b);
+  --color-emerald-950: var(--color-emerald-950, #022c22);
+}
+
+:root {
+  --theme-primary: #059669;
+  --theme-primary-hover: #047857;
+  --theme-primary-light: #ecfdf5;
+  --theme-primary-border: #a7f3d0;
+  --theme-primary-text: #065f46;
+}
+
+.bg-theme-primary {
+  background-color: var(--theme-primary) !important;
+}
+.hover\:bg-theme-primary-hover:hover {
+  background-color: var(--theme-primary-hover) !important;
+}
+.bg-theme-light {
+  background-color: var(--theme-primary-light) !important;
+}
+.border-theme-primary {
+  border-color: var(--theme-primary-border) !important;
+}
+.text-theme-primary {
+  color: var(--theme-primary) !important;
+}
+.text-theme-dark {
+  color: var(--theme-primary-text) !important;
+}
+
+/* DARK MODE GLOBAL STYLING */
+html.dark,
+[data-mode="dark"] {
+  color-scheme: dark;
+  background-color: #0b0f17;
+  color: #f1f5f9;
+}
+
+html.dark body {
+  background-color: #0b0f17;
+  color: #f1f5f9;
+}
+
+/* Backgrounds in dark mode */
+html.dark .bg-white {
+  background-color: #151d2a !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/80 {
+  background-color: #1a2333 !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/90,
+html.dark .bg-slate-100\/70,
+html.dark .bg-slate-100\/80 {
+  background-color: #111827 !important;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #27354a !important;
+}
+
+/* Border colors in dark mode */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #27354a !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #27354a !important;
+}
+
+/* Text colors in dark mode */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Form controls in dark mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html.dark textarea,
+html.dark select {
+  background-color: #131b26 !important;
+  color: #f8fafc !important;
+  border-color: #2d3d54 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Tables and hover states */
+html.dark tr.hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #1e293b !important;
+}
+
+/* Tinted accents in dark mode */
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/50,
+html.dark .bg-emerald-50\/60,
+html.dark .bg-emerald-50\/80,
+html.dark .bg-emerald-50\/90 {
+  background-color: rgba(5, 150, 105, 0.18) !important;
+  color: #a7f3d0 !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/50,
+html.dark .bg-blue-50\/80 {
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  color: #bfdbfe !important;
+}
+
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/50,
+html.dark .bg-amber-50\/80 {
+  background-color: rgba(217, 119, 6, 0.18) !important;
+  color: #fde68a !important;
+}
+
+html.dark .bg-purple-50,
+html.dark .bg-purple-50\/50,
+html.dark .bg-purple-50\/80 {
+  background-color: rgba(124, 58, 237, 0.18) !important;
+  color: #ddd6fe !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/50,
+html.dark .bg-rose-50\/80 {
+  background-color: rgba(225, 29, 72, 0.18) !important;
+  color: #fecdd3 !important;
+}
+
+html.dark .bg-orange-50,
+html.dark .bg-orange-50\/50,
+html.dark .bg-orange-50\/80 {
+  background-color: rgba(234, 88, 12, 0.18) !important;
+  color: #fed7aa !important;
+}
+
+html.dark .bg-teal-50,
+html.dark .bg-teal-50\/50,
+html.dark .bg-teal-50\/80 {
+  background-color: rgba(13, 148, 136, 0.18) !important;
+  color: #99f6e4 !important;
+}
+
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-50\/50,
+html.dark .bg-indigo-50\/80 {
+  background-color: rgba(79, 70, 229, 0.18) !important;
+  color: #c7d2fe !important;
+}
+
+html.dark .text-emerald-950,
+html.dark .text-emerald-900,
+html.dark .text-emerald-800 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .text-blue-950,
+html.dark .text-blue-900,
+html.dark .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+html.dark .text-amber-950,
+html.dark .text-amber-900,
+html.dark .text-amber-800 {
+  color: #fcd34d !important;
+}
+
+html.dark .text-rose-950,
+html.dark .text-rose-900,
+html.dark .text-rose-800 {
+  color: #fda4af !important;
+}
+
+html.dark .text-purple-950,
+html.dark .text-purple-900,
+html.dark .text-purple-800 {
+  color: #c4b5fd !important;
+}
+
+html.dark .text-orange-950,
+html.dark .text-orange-900,
+html.dark .text-orange-800 {
+  color: #fdba74 !important;
+}
+
+/* Modals & Popups in Dark Mode */
+html.dark .shadow-2xl,
+html.dark .shadow-xl {
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px #27354a !important;
+}
+
+/* PRINT STYLES FOR RECEIPTS & TICKETS */
+
+
+@media print {
+  /* Hide all app wrapper UI except printable receipt content */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .printable-receipt,
+  .printable-receipt * {
+    visibility: visible !important;
+  }
+
+  .printable-receipt {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+    padding: 12px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Hide buttons, tabs, modal close headers during print */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+}
+
