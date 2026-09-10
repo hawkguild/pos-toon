@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { POSProvider, usePOS } from './context/POSContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Navbar } from './components/Navbar';
@@ -74,6 +75,7 @@ export default function App() {
     <ThemeProvider>
       <POSProvider>
         <MainApp />
+        <SpeedInsights />
       </POSProvider>
     </ThemeProvider>
   );
