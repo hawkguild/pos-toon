@@ -19,7 +19,6 @@ import {
   ShoppingCart,
   Leaf,
   Coffee,
-  ChefHat,
   Package,
   Truck,
   Sprout,
@@ -80,7 +79,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'pos', label: 'หน้าหลัก POS (ขายสินค้า)', icon: ShoppingCart, badge: 'ขายสินค้า' },
     { id: 'cannabis', label: 'กัญชา (Compliance)', icon: Leaf, badge: '2569' },
     { id: 'kratom', label: 'น้ำกระท่อม (Batch)', icon: Coffee, badge: 'สูตรต้ม' },
-    { id: 'kitchen', label: 'จอสั่งอาหาร (KDS)', icon: ChefHat, badge: 'ครัว' },
     { id: 'inventory', label: 'คลังสินค้า (Stock)', icon: Package },
     { id: 'sources', label: 'แหล่งที่มาวัตถุดิบ (Origins)', icon: Sprout, badge: 'Trace' },
     { id: 'suppliers', label: 'ซัพพลายเออร์', icon: Truck },
@@ -179,9 +177,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               <p className="text-xs text-slate-500 flex items-center gap-1 font-medium hidden sm:flex">
                 <span>🌿 กัญชาสมุนไพรควบคุม</span>
                 <span>•</span>
-                <span>🥤 กระท่อม</span>
+                <span>🥤 น้ำกระท่อม</span>
                 <span>•</span>
-                <span>🍜 ครัวอาหาร</span>
+                <span>📦 สินค้าและวัตถุดิบ</span>
               </p>
             </div>
           </div>
@@ -543,10 +541,10 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
               </div>
 
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200 text-amber-950">
-                <p className="font-semibold text-amber-800 mb-1">🍜 3. ระบบตัดสต็อกวัตถุดิบอาหาร:</p>
+                <p className="font-semibold text-amber-800 mb-1">📦 3. ระบบตัดสต็อกและวัตถุดิบอัตโนมัติ:</p>
                 <p>
-                  ระบบจะทำการตัดสต็อกวัตถุดิบรายรายการตาม Recipe ของเมนูอาหารโดยอัตโนมัติ
-                  พร้อมเชื่อมต่อกับระบบ Kitchen Display System (KDS) สำหรับห้องครัว
+                  ระบบจะทำการตัดสต็อกวัตถุดิบรายรายการตามบิลขายโดยอัตโนมัติ
+                  พร้อมระบบตรวจสอบความถูกต้อง ตรวจสอบย้อนกลับ (Traceability) และแจ้งเตือนสต็อกต่ำ
                 </p>
               </div>
             </div>

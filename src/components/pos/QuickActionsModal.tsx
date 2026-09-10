@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { usePOS } from '../../context/POSContext';
 import {
   Zap,
-  ChefHat,
   RefreshCw,
   DollarSign,
   History,
@@ -20,8 +19,6 @@ import {
   ShieldCheck,
   Receipt,
   Sparkles,
-  Volume2,
-  VolumeX,
   Lock,
   ArrowRight,
   TrendingUp,
@@ -54,8 +51,6 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
   const {
     currentUser,
     users,
-    kitchenOrders,
-    updateKitchenItemStatus,
     currentShift,
     shifts,
     startShift,
@@ -66,13 +61,8 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
     clearCart,
   } = usePOS();
 
-  const [activeTab, setActiveTab] = useState<'hub' | 'kitchen' | 'shift'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'shift'>('hub');
   
-  // Kitchen View Sub-states
-  const [kitchenStationFilter, setKitchenStationFilter] = useState<'all' | 'kitchen' | 'bar'>('all');
-  const [now, setNow] = useState<Date>(new Date());
-  const [kitchenSound, setKitchenSound] = useState(true);
-
   // Shift Switching Sub-states
   const [selectedTargetUserId, setSelectedTargetUserId] = useState<string>('');
   const [targetUserPin, setTargetUserPin] = useState<string>('');
@@ -89,13 +79,6 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
   // Cash Drawer Notification
   const [drawerSuccessMsg, setDrawerSuccessMsg] = useState<string | null>(null);
 
-  // Update clock every second for KDS SLA calculation
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, [isOpen]);
-
   // Set default target user when users list is available
   useEffect(() => {
     if (users.length > 0 && !selectedTargetUserId) {
@@ -109,34 +92,6 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
   }, [users, currentUser, selectedTargetUserId]);
 
   if (!isOpen) return null;
-
-  // Pending Kitchen Orders
-  const pendingOrPrepKitchenOrders = (kitchenOrders || []).filter(
-    (o) => o.overallStatus !== 'served'
-  );
-
-  // SLA Calculation
-  const getOrderSlaDetails = (orderTimestamp: string, targetMins = 15) => {
-    const orderTime = new Date(orderTimestamp).getTime();
-    const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - orderTime) / 1000));
-    const targetSeconds = targetMins * 60;
-    const remainingSeconds = targetSeconds - elapsedSeconds;
-
-    let alertLevel: 'normal' | 'warning' | 'overdue' = 'normal';
-    if (elapsedSeconds >= targetSeconds) alertLevel = 'overdue';
-    else if (elapsedSeconds >= targetSeconds * 0.6) alertLevel = 'warning';
-
-    const mins = Math.floor(Math.abs(remainingSeconds) / 60);
-    const secs = Math.abs(remainingSeconds) % 60;
-    const formatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-    return {
-      elapsedSeconds,
-      remainingSeconds,
-      alertLevel,
-      formattedCountdown: remainingSeconds < 0 ? `+${formatted}` : formatted,
-    };
-  };
 
   const handleOpenCashDrawerTrigger = () => {
     openCashDrawer('เปิดลิ้นชักผ่านเมนูด่วน POS Quick Actions');
@@ -254,26 +209,6 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
             >
               <Zap className="w-3.5 h-3.5" />
               <span>ศูนย์รวมคำสั่งด่วน</span>
-            </button>
-
-            <button
-              id="quick-tab-kitchen-btn"
-              onClick={() => setActiveTab('kitchen')}
-              className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap relative ${
-                activeTab === 'kitchen'
-                  ? 'bg-orange-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <ChefHat className="w-3.5 h-3.5" />
-              <span>จอครัวด่วน KDS</span>
-              {pendingOrPrepKitchenOrders.length > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  activeTab === 'kitchen' ? 'bg-white text-orange-700' : 'bg-orange-500 text-white'
-                }`}>
-                  {pendingOrPrepKitchenOrders.length}
-                </span>
-              )}
             </button>
 
             <button
@@ -396,37 +331,7 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {/* Action 1: Toggle Kitchen Display */}
-                  <button
-                    id="action-toggle-kitchen-card"
-                    onClick={() => setActiveTab('kitchen')}
-                    className="group bg-white hover:bg-orange-50/70 border border-slate-200 hover:border-orange-300 p-4 rounded-2xl text-left transition shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl bg-orange-100 border border-orange-200 text-orange-700 flex items-center justify-center group-hover:scale-105 transition">
-                        <ChefHat className="w-5 h-5" />
-                      </div>
-                      {pendingOrPrepKitchenOrders.length > 0 && (
-                        <span className="bg-orange-500 text-white text-xs font-extrabold px-2 py-0.5 rounded-full animate-pulse">
-                          {pendingOrPrepKitchenOrders.length} ออเดอร์
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-slate-900 group-hover:text-orange-800 transition">
-                        จอครัวด่วน (KDS Display)
-                      </h5>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        ดูคิวอาหาร, ควบคุมเวลา SLA, เปลี่ยนสถานะพร้อมเสิร์ฟ
-                      </p>
-                    </div>
-                    <div className="text-[11px] font-semibold text-orange-700 flex items-center gap-1 pt-1 border-t border-slate-100">
-                      <span>เปิดจอครัวด่วน</span>
-                      <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition" />
-                    </div>
-                  </button>
-
-                  {/* Action 2: Switch Shift / Cashier Handover */}
+                  {/* Action 1: Switch Shift / Cashier Handover */}
                   <button
                     id="action-switch-shift-card"
                     onClick={() => setActiveTab('shift')}
@@ -700,206 +605,7 @@ export const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: QUICK KITCHEN DISPLAY (KDS) */}
-          {activeTab === 'kitchen' && (
-            <div className="space-y-4">
-              {/* KDS Bar */}
-              <div className="bg-white border border-slate-200 p-3.5 rounded-2xl shadow-2xs flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-600">กรองแผนก:</span>
-                  <div className="flex items-center space-x-1">
-                    {(['all', 'kitchen', 'bar'] as const).map((station) => (
-                      <button
-                        key={station}
-                        onClick={() => setKitchenStationFilter(station)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${
-                          kitchenStationFilter === station
-                            ? 'bg-orange-600 text-white shadow-2xs'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {station === 'all' && 'ทั้งหมด'}
-                        {station === 'kitchen' && '🍳 ครัวอาหาร'}
-                        {station === 'bar' && '🍹 บาร์เครื่องดื่ม'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setKitchenSound(!kitchenSound)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border transition ${
-                      kitchenSound
-                        ? 'bg-orange-50 text-orange-700 border-orange-200'
-                        : 'bg-slate-100 text-slate-400 border-slate-200'
-                    }`}
-                  >
-                    {kitchenSound ? <Volume2 className="w-3.5 h-3.5 text-orange-600" /> : <VolumeX className="w-3.5 h-3.5" />}
-                    <span>{kitchenSound ? 'เสียงเตือน: เปิด' : 'เสียงเตือน: ปิด'}</span>
-                  </button>
-
-                  <span className="text-xs font-mono font-bold bg-slate-100 px-2.5 py-1 rounded-xl text-slate-700 border border-slate-200">
-                    {now.toLocaleTimeString('th-TH')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Kitchen Orders List */}
-              {pendingOrPrepKitchenOrders.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-slate-400 space-y-3">
-                  <ChefHat className="w-12 h-12 mx-auto text-slate-300" />
-                  <p className="text-sm font-bold text-slate-700">ไม่มีรายการออเดอร์ค้างในครัวขณะนี้</p>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    เมื่อมีการชำระเงินเมนูอาหารหรือเครื่องดื่ม รายการจะปรากฏบนหน้านี้แบบ Real-Time ทันที
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {pendingOrPrepKitchenOrders.map((order) => {
-                    const sla = getOrderSlaDetails(order.timestamp, 15);
-                    const filteredItems = (order.items || []).filter((item) => {
-                      if (kitchenStationFilter === 'all') return true;
-                      return item.station === kitchenStationFilter;
-                    });
-
-                    if (filteredItems.length === 0) return null;
-
-                    return (
-                      <div
-                        key={order.id}
-                        className={`bg-white border rounded-2xl p-4 shadow-2xs flex flex-col justify-between transition ${
-                          sla.alertLevel === 'overdue'
-                            ? 'border-rose-300 ring-2 ring-rose-400 bg-rose-50/40'
-                            : sla.alertLevel === 'warning'
-                            ? 'border-amber-300 ring-1 ring-amber-300 bg-amber-50/30'
-                            : 'border-slate-200'
-                        }`}
-                      >
-                        {/* Order Header */}
-                        <div>
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <span className="font-mono font-extrabold text-sm text-slate-900">
-                                  {order.orderNo}
-                                </span>
-                                <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold border border-slate-200">
-                                  {order.orderType === 'dine_in'
-                                    ? `ทานที่ร้าน (โต๊ะ ${order.tableNo || '-'})`
-                                    : order.orderType === 'takeaway'
-                                    ? 'สั่งกลับบ้าน'
-                                    : 'เดลิเวอรี'}
-                                </span>
-                              </div>
-                              <span className="text-[10px] text-slate-400">
-                                สั่งเมื่อ {new Date(order.timestamp).toLocaleTimeString('th-TH')}
-                              </span>
-                            </div>
-
-                            {/* SLA Timer Countdown */}
-                            <div className="text-right">
-                              <span
-                                className={`text-xs font-mono font-extrabold px-2 py-0.5 rounded-lg flex items-center gap-1 ${
-                                  sla.alertLevel === 'overdue'
-                                    ? 'bg-rose-600 text-white'
-                                    : sla.alertLevel === 'warning'
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-emerald-600 text-white'
-                                }`}
-                              >
-                                <Clock className="w-3 h-3" />
-                                {sla.formattedCountdown}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Order Items */}
-                          <div className="mt-3 space-y-2">
-                            {filteredItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs"
-                              >
-                                <div className="min-w-0 flex-1 pr-2">
-                                  <div className="flex items-center space-x-1.5">
-                                    <span className="font-extrabold text-slate-900">
-                                      {item.quantity}x
-                                    </span>
-                                    <span className="font-bold text-slate-800 truncate">
-                                      {item.productName}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400">({item.unit})</span>
-                                  </div>
-                                  {item.customNotes && (
-                                    <p className="text-[10px] text-amber-700 font-semibold mt-0.5 truncate">
-                                      📝 {item.customNotes}
-                                    </p>
-                                  )}
-                                </div>
-
-                                {/* Status Control Buttons */}
-                                <div className="flex items-center space-x-1 shrink-0">
-                                  {item.status === 'pending' && (
-                                    <button
-                                      onClick={() => updateKitchenItemStatus(order.id, item.id, 'preparing')}
-                                      className="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition shadow-2xs"
-                                    >
-                                      🍳 ปรุง
-                                    </button>
-                                  )}
-                                  {item.status === 'preparing' && (
-                                    <button
-                                      onClick={() => updateKitchenItemStatus(order.id, item.id, 'ready')}
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition shadow-2xs"
-                                    >
-                                      ✅ พร้อมเสิร์ฟ
-                                    </button>
-                                  )}
-                                  {item.status === 'ready' && (
-                                    <button
-                                      onClick={() => updateKitchenItemStatus(order.id, item.id, 'served')}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition shadow-2xs"
-                                    >
-                                      🛎️ เสิร์ฟแล้ว
-                                    </button>
-                                  )}
-                                  {item.status === 'served' && (
-                                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                                      เสร็จสิ้น
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Quick Action to Serve All */}
-                        <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            สถานะ: {order.overallStatus === 'ready' ? '✅ พร้อมเสิร์ฟทั้งหมด' : order.overallStatus === 'preparing' ? '🍳 กำลังปรุง' : '⏳ รอดำเนินการ'}
-                          </span>
-                          <button
-                            onClick={() => {
-                              filteredItems.forEach((item) => {
-                                updateKitchenItemStatus(order.id, item.id, 'served');
-                              });
-                            }}
-                            className="text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer"
-                          >
-                            เสิร์ฟครบทุกรายการ 🛎️
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB 3: SHIFT & CASHIER SWITCHING */}
+          {/* TAB 2: SHIFT & CASHIER SWITCHING */}
           {activeTab === 'shift' && (
             <div className="space-y-5">
               {/* Active Shift Overview */}

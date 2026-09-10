@@ -6,7 +6,6 @@ import { NavigationTabs } from './components/NavigationTabs';
 import { POSTerminal } from './components/pos/POSTerminal';
 import { CannabisManager } from './components/cannabis/CannabisManager';
 import { KratomManager } from './components/kratom/KratomManager';
-import { KitchenDisplay } from './components/kitchen/KitchenDisplay';
 import { InventoryManager } from './components/inventory/InventoryManager';
 import { RawMaterialSourceManager } from './components/sources/RawMaterialSourceManager';
 import { SupplierManager } from './components/suppliers/SupplierManager';
@@ -47,7 +46,6 @@ function MainApp() {
         {activeTab === 'pos' && <POSTerminal />}
         {activeTab === 'cannabis' && <CannabisManager />}
         {activeTab === 'kratom' && <KratomManager />}
-        {activeTab === 'kitchen' && <KitchenDisplay />}
         {activeTab === 'inventory' && <InventoryManager />}
         {activeTab === 'sources' && <RawMaterialSourceManager />}
         {activeTab === 'suppliers' && <SupplierManager />}

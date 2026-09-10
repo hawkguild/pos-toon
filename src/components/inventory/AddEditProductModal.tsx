@@ -459,48 +459,6 @@ export const AddEditProductModal: React.FC<AddEditProductModalProps> = ({
             </div>
           </div>
 
-          {/* Category Specific Options */}
-          {category === 'food' && (
-            <div className="bg-orange-50/60 p-3 rounded-2xl border border-orange-200">
-              <label className="block font-bold text-orange-900 mb-1">สถานีครัวสั่งอาหาร (Kitchen Station)</label>
-              <div className="flex space-x-3 text-xs">
-                <label className="flex items-center space-x-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="station"
-                    value="kitchen"
-                    checked={kitchenStation === 'kitchen'}
-                    onChange={() => setKitchenStation('kitchen')}
-                    className="text-orange-600"
-                  />
-                  <span>ครัวหลัก (Kitchen)</span>
-                </label>
-                <label className="flex items-center space-x-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="station"
-                    value="bar"
-                    checked={kitchenStation === 'bar'}
-                    onChange={() => setKitchenStation('bar')}
-                    className="text-orange-600"
-                  />
-                  <span>บาร์น้ำ/เครื่องดื่ม (Bar)</span>
-                </label>
-                <label className="flex items-center space-x-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="station"
-                    value="prep"
-                    checked={kitchenStation === 'prep'}
-                    onChange={() => setKitchenStation('prep')}
-                    className="text-orange-600"
-                  />
-                  <span>ครัวเตรียม/ของหวาน (Prep)</span>
-                </label>
-              </div>
-            </div>
-          )}
-
           {category === 'cannabis' && (
             <div className="bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-200 space-y-3">
               <div className="font-bold text-emerald-900 flex items-center space-x-1.5">
