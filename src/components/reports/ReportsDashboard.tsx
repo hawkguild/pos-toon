@@ -2953,7 +2953,7 @@ export const ReportsDashboard: React.FC = () => {
             <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl text-xs text-rose-900 space-y-1.5">
               <p className="font-bold flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                การดำเนินการนี้จะลบข้อมูลจากทั้งหน่วยความจำและ Cloud Firestore ถาวร
+                การดำเนินการนี้จะลบข้อมูลจากทั้งหน่วยความจำและ Supabase ถาวร
               </p>
               <p className="text-[11px] text-rose-700 leading-relaxed">
                 ข้อมูลที่ถูกรีเซ็ตจะไม่สามารถกู้คืนได้ กรุณาตรวจสอบให้แน่ใจก่อนกดยืนยัน
