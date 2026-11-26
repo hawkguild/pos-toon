@@ -222,7 +222,7 @@ export const UserManager: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              เพิ่ม, ลบ, แก้ไขชื่อผู้ใช้, รหัสผ่าน, กำหนดสิทธิ์ และซิงค์ฐานข้อมูล Firestore อัตโนมัติ
+              เพิ่ม, ลบ, แก้ไขชื่อผู้ใช้, รหัสผ่าน, กำหนดสิทธิ์ และซิงค์ฐานข้อมูล Supabase อัตโนมัติ
             </p>
           </div>
         </div>
@@ -721,7 +721,7 @@ export const UserManager: React.FC = () => {
               </div>
 
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 leading-relaxed">
-                ⚠️ เมื่อลบแล้ว บัญชีนี้จะไม่สามารถล็อกอิน เข้าถึงระบบ หรือใช้รหัส PIN เพื่ออนุมัติสิทธิ์ได้อีกต่อไป และจะถูกลบออกจาก Cloud Firestore ทันที
+                ⚠️ เมื่อลบแล้ว บัญชีนี้จะไม่สามารถล็อกอิน เข้าถึงระบบ หรือใช้รหัส PIN เพื่ออนุมัติสิทธิ์ได้อีกต่อไป และจะถูกลบออกจาก Supabase ทันที
               </div>
             </div>
 

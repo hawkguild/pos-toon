@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { onSnapshot, doc, collection } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import {
   Product,
   CannabisLot,
@@ -48,35 +46,37 @@ import {
   INITIAL_PROMOTIONS,
 } from '../data/initialData';
 import {
-  seedFirestoreIfEmpty,
-  saveSaleToFirestore,
-  saveAuditLogToFirestore,
-  saveStockMovementToFirestore,
-  saveProductToFirestore,
-  deleteProductFromFirestore,
-  saveCustomerToFirestore,
-  saveSupplierToFirestore,
-  saveCannabisLotToFirestore,
-  saveKratomBatchToFirestore,
-  saveKitchenOrderToFirestore,
-  saveShopSettingsToFirestore,
-  saveUserToFirestore,
-  deleteUserFromFirestore,
-  deleteSupplierFromFirestore,
-  deleteCustomerFromFirestore,
-  saveExpenseToFirestore,
-  deleteExpenseFromFirestore,
-  saveRawMaterialSourceToFirestore,
-  deleteRawMaterialSourceFromFirestore,
-  savePromotionToFirestore,
-  deletePromotionFromFirestore,
-  resetAllSalesInFirestore,
-  resetAllExpensesInFirestore,
-  resetAllAccountingInFirestore,
+  seedDbIfEmpty,
+  subscribeTable,
+  subscribeDoc,
+  saveSaleToDb,
+  saveAuditLogToDb,
+  saveStockMovementToDb,
+  saveProductToDb,
+  deleteProductFromDb,
+  saveCustomerToDb,
+  saveSupplierToDb,
+  saveCannabisLotToDb,
+  saveKratomBatchToDb,
+  saveKitchenOrderToDb,
+  saveShopSettingsToDb,
+  saveUserToDb,
+  deleteUserFromDb,
+  deleteSupplierFromDb,
+  deleteCustomerFromDb,
+  saveExpenseToDb,
+  deleteExpenseFromDb,
+  saveRawMaterialSourceToDb,
+  deleteRawMaterialSourceFromDb,
+  savePromotionToDb,
+  deletePromotionFromDb,
+  resetAllSalesInDb,
+  resetAllExpensesInDb,
+  resetAllAccountingInDb,
   COLLECTIONS,
   OperationType,
-  handleFirestoreError,
-} from '../lib/firestoreService';
+  handleDbError,
+} from '../lib/dbService';
 import { evaluatePromotions } from '../utils/promotionEngine';
 
 interface POSContextType {
@@ -260,7 +260,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isSyncing = pendingSyncCount > 0;
 
-  // Helper for tracking background Firestore writes (Optimistic Sync Pattern)
+  // Helper for tracking background database writes (Optimistic Sync Pattern)
   const runSyncWrite = <T,>(writePromise: Promise<T>): Promise<T> => {
     setPendingSyncCount((prev) => prev + 1);
     setSyncError(null);
@@ -276,7 +276,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return result;
       })
       .catch((err: any) => {
-        console.error('Firestore optimistic sync error:', err);
+        console.error('Database sync error:', err);
         setSyncError(err?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลลง Cloud');
         throw err;
       })
@@ -300,7 +300,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setShopSettings: React.Dispatch<React.SetStateAction<ShopSettings>> = (value) => {
     setShopSettingsInternal((prev) => {
       const updated = typeof value === 'function' ? (value as any)(prev) : value;
-      runSyncWrite(saveShopSettingsToFirestore(updated));
+      runSyncWrite(saveShopSettingsToDb(updated));
       return updated;
     });
   };
@@ -364,223 +364,79 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => saveStored('shifts', shifts), [shifts]);
   useEffect(() => saveStored('current_shift', currentShift), [currentShift]);
 
-  // Real-time Firestore Subscriptions for Multi-Device Sync
+  // Real-time Supabase Subscriptions for Multi-Device Sync
   useEffect(() => {
-    let unsubscribes: (() => void)[] = [];
+    const unsubscribes: (() => void)[] = [];
+    let cancelled = false;
+
+    const byNewest = <T extends { timestamp: string }>(list: T[]) =>
+      list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // Subscribe to a whole table and mirror it into React state + localStorage.
+    const syncTable = <T,>(
+      table: string,
+      storageKey: string,
+      setter: (list: T[]) => void,
+      transform: (list: T[]) => T[] = (list) => list
+    ) => {
+      unsubscribes.push(
+        subscribeTable<T>(
+          table,
+          (rows) => {
+            const list = transform(rows);
+            setter(list);
+            saveStored(storageKey, list);
+          },
+          (err) => handleDbError(err, OperationType.LIST, table)
+        )
+      );
+    };
 
     const initSync = async () => {
       try {
-        await seedFirestoreIfEmpty();
+        await seedDbIfEmpty();
+        if (cancelled) return;
 
         // 1. Settings
-        const unsubSettings = onSnapshot(
-          doc(db, COLLECTIONS.SETTINGS, 'default'),
-          (snapshot) => {
-            if (snapshot.exists()) {
-              const data = snapshot.data() as ShopSettings;
-              setShopSettingsInternal(data);
-              saveStored('settings', data);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.GET, COLLECTIONS.SETTINGS)
+        unsubscribes.push(
+          subscribeDoc<ShopSettings>(
+            COLLECTIONS.SETTINGS,
+            'default',
+            (data) => {
+              if (data) {
+                setShopSettingsInternal(data);
+                saveStored('settings', data);
+              }
+            },
+            (err) => handleDbError(err, OperationType.GET, COLLECTIONS.SETTINGS)
+          )
         );
-        unsubscribes.push(unsubSettings);
 
-        // 2. Products
-        const unsubProducts = onSnapshot(
-          collection(db, COLLECTIONS.PRODUCTS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as Product);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setProducts(list);
-              saveStored('products', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PRODUCTS)
-        );
-        unsubscribes.push(unsubProducts);
-
-        // 3. Customers
-        const unsubCustomers = onSnapshot(
-          collection(db, COLLECTIONS.CUSTOMERS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as Customer);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setCustomers(list);
-              saveStored('customers', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.CUSTOMERS)
-        );
-        unsubscribes.push(unsubCustomers);
-
-        // 4. Suppliers
-        const unsubSuppliers = onSnapshot(
-          collection(db, COLLECTIONS.SUPPLIERS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as Supplier);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setSuppliers(list);
-              saveStored('suppliers', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.SUPPLIERS)
-        );
-        unsubscribes.push(unsubSuppliers);
-
-        // 4.5 Raw Material Sources (แหล่งที่มาวัตถุดิบ)
-        const unsubSources = onSnapshot(
-          collection(db, COLLECTIONS.RAW_MATERIAL_SOURCES),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as RawMaterialSource);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setRawMaterialSources(list);
-              saveStored('raw_material_sources', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.RAW_MATERIAL_SOURCES)
-        );
-        unsubscribes.push(unsubSources);
-
-        // 5. Users
-        const unsubUsers = onSnapshot(
-          collection(db, COLLECTIONS.USERS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as User);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setUsers(list);
-              saveStored('users_list', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.USERS)
-        );
-        unsubscribes.push(unsubUsers);
-
-        // 5.5. Expenses & Income Records
-        const unsubExpenses = onSnapshot(
-          collection(db, COLLECTIONS.EXPENSES),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as Expense);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setExpenses(list);
-              saveStored('expenses', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.EXPENSES)
-        );
-        unsubscribes.push(unsubExpenses);
-
-        // 6. Sales/Orders
-        const unsubSales = onSnapshot(
-          collection(db, COLLECTIONS.SALES),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as SaleOrder);
-            list.sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            setOrders(list);
-            saveStored('orders', list);
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.SALES)
-        );
-        unsubscribes.push(unsubSales);
-
-        // 7. Cannabis Lots
-        const unsubLots = onSnapshot(
-          collection(db, COLLECTIONS.CANNABIS_LOTS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as CannabisLot);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setCannabisLots(list);
-              saveStored('cannabis_lots', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.CANNABIS_LOTS)
-        );
-        unsubscribes.push(unsubLots);
-
-        // 8. Kratom Batches
-        const unsubBatches = onSnapshot(
-          collection(db, COLLECTIONS.PRODUCT_BATCHES),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as KratomBatch);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setKratomBatches(list);
-              saveStored('kratom_batches', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PRODUCT_BATCHES)
-        );
-        unsubscribes.push(unsubBatches);
-
-        // 9. Stock Movements
-        const unsubMovements = onSnapshot(
-          collection(db, COLLECTIONS.STOCK_MOVEMENTS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as StockMovement);
-            list.sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            setStockMovements(list);
-            saveStored('movements', list);
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.STOCK_MOVEMENTS)
-        );
-        unsubscribes.push(unsubMovements);
-
-        // 10. Kitchen Orders
-        const unsubKitchen = onSnapshot(
-          collection(db, COLLECTIONS.KITCHEN_ORDERS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as KitchenOrder);
-            list.sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            setKitchenOrders(list);
-            saveStored('kitchen', list);
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.KITCHEN_ORDERS)
-        );
-        unsubscribes.push(unsubKitchen);
-
-        // 11. Audit Logs
-        const unsubLogs = onSnapshot(
-          collection(db, COLLECTIONS.AUDIT_LOGS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as AuditLog);
-            list.sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            setAuditLogs(list);
-            saveStored('audit_logs', list);
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.AUDIT_LOGS)
-        );
-        unsubscribes.push(unsubLogs);
-
-        // 12. Promotions
-        const unsubPromotions = onSnapshot(
-          collection(db, COLLECTIONS.PROMOTIONS),
-          (snapshot) => {
-            const list = snapshot.docs.map((d) => d.data() as Promotion);
-            if (list.length > 0 || snapshot.metadata.fromCache === false) {
-              setPromotions(list);
-              saveStored('promotions', list);
-            }
-          },
-          (err) => handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PROMOTIONS)
-        );
-        unsubscribes.push(unsubPromotions);
+        // 2-12. Collections
+        syncTable<Product>(COLLECTIONS.PRODUCTS, 'products', setProducts);
+        syncTable<Customer>(COLLECTIONS.CUSTOMERS, 'customers', setCustomers);
+        syncTable<Supplier>(COLLECTIONS.SUPPLIERS, 'suppliers', setSuppliers);
+        syncTable<RawMaterialSource>(COLLECTIONS.RAW_MATERIAL_SOURCES, 'raw_material_sources', setRawMaterialSources);
+        syncTable<User>(COLLECTIONS.USERS, 'users_list', setUsers);
+        syncTable<Expense>(COLLECTIONS.EXPENSES, 'expenses', setExpenses);
+        syncTable<SaleOrder>(COLLECTIONS.SALES, 'orders', setOrders, byNewest);
+        syncTable<CannabisLot>(COLLECTIONS.CANNABIS_LOTS, 'cannabis_lots', setCannabisLots);
+        syncTable<KratomBatch>(COLLECTIONS.PRODUCT_BATCHES, 'kratom_batches', setKratomBatches);
+        syncTable<StockMovement>(COLLECTIONS.STOCK_MOVEMENTS, 'movements', setStockMovements, byNewest);
+        syncTable<KitchenOrder>(COLLECTIONS.KITCHEN_ORDERS, 'kitchen', setKitchenOrders, byNewest);
+        syncTable<AuditLog>(COLLECTIONS.AUDIT_LOGS, 'audit_logs', setAuditLogs, byNewest);
+        syncTable<Promotion>(COLLECTIONS.PROMOTIONS, 'promotions', setPromotions);
 
         setIsCloudSynced(true);
       } catch (e) {
-        console.error('Error setting up Firestore subscriptions:', e);
+        console.error('Error setting up database subscriptions:', e);
       }
     };
 
     initSync();
 
     return () => {
+      cancelled = true;
       unsubscribes.forEach((unsub) => unsub());
     };
   }, []);
@@ -608,7 +464,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...(mandatoryReason !== undefined && { mandatoryReason }),
     };
     setAuditLogs((prev) => [newLog, ...prev]);
-    runSyncWrite(saveAuditLogToFirestore(newLog));
+    runSyncWrite(saveAuditLogToDb(newLog));
   };
 
   // Auth & User Management Methods
@@ -665,7 +521,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'usr-' + Date.now(),
     };
     setUsers((prev) => [...prev, newUser]);
-    runSyncWrite(saveUserToFirestore(newUser));
+    runSyncWrite(saveUserToDb(newUser));
     addAuditLog('ADD_USER', 'settings', `เพิ่มผู้ใช้งานใหม่: ${newUser.name} (${newUser.role})`);
   };
 
@@ -674,7 +530,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((u) => {
         if (u.id === id) {
           const newU = { ...u, ...updated };
-          runSyncWrite(saveUserToFirestore(newU));
+          runSyncWrite(saveUserToDb(newU));
           return newU;
         }
         return u;
@@ -695,7 +551,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const target = users.find((u) => u.id === id);
     setUsers((prev) => prev.filter((u) => u.id !== id));
-    runSyncWrite(deleteUserFromFirestore(id));
+    runSyncWrite(deleteUserFromDb(id));
     addAuditLog('DELETE_USER', 'settings', `ลบผู้ใช้งาน: ${target?.name || id}`);
     return true;
   };
@@ -832,7 +688,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'prod-' + Date.now(),
     };
     setProducts((prev) => [newProduct, ...prev]);
-    runSyncWrite(saveProductToFirestore(newProduct));
+    runSyncWrite(saveProductToDb(newProduct));
     addAuditLog('ADD_PRODUCT', 'inventory', `เพิ่มสินค้า/เมนูใหม่: ${newProduct.name} (${newProduct.category})`);
   };
 
@@ -841,7 +697,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((p) => {
         if (p.id === id) {
           const newP = { ...p, ...updated };
-          runSyncWrite(saveProductToFirestore(newP));
+          runSyncWrite(saveProductToDb(newP));
           return newP;
         }
         return p;
@@ -853,7 +709,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteProduct = (id: string): boolean => {
     const target = products.find((p) => p.id === id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
-    runSyncWrite(deleteProductFromFirestore(id));
+    runSyncWrite(deleteProductFromDb(id));
     addAuditLog('DELETE_PRODUCT', 'inventory', `ลบสินค้า/เมนู: ${target?.name || id}`);
     return true;
   };
@@ -865,7 +721,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'sup-' + Date.now(),
     };
     setSuppliers((prev) => [newSupplier, ...prev]);
-    runSyncWrite(saveSupplierToFirestore(newSupplier));
+    runSyncWrite(saveSupplierToDb(newSupplier));
     addAuditLog('ADD_SUPPLIER', 'inventory', `เพิ่มซัพพลายเออร์ใหม่: ${newSupplier.companyName} (${newSupplier.code})`);
   };
 
@@ -874,7 +730,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((s) => {
         if (s.id === id) {
           const newS = { ...s, ...updated };
-          runSyncWrite(saveSupplierToFirestore(newS));
+          runSyncWrite(saveSupplierToDb(newS));
           return newS;
         }
         return s;
@@ -886,7 +742,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteSupplier = (id: string): boolean => {
     const target = suppliers.find((s) => s.id === id);
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
-    runSyncWrite(deleteSupplierFromFirestore(id));
+    runSyncWrite(deleteSupplierFromDb(id));
     addAuditLog('DELETE_SUPPLIER', 'inventory', `ลบซัพพลายเออร์: ${target?.companyName || id}`);
     return true;
   };
@@ -921,7 +777,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setRawMaterialSources((prev) => [newSource, ...prev]);
-    runSyncWrite(saveRawMaterialSourceToFirestore(newSource));
+    runSyncWrite(saveRawMaterialSourceToDb(newSource));
     addAuditLog('ADD_RAW_MATERIAL_SOURCE', 'inventory', `เพิ่มบันทึกแหล่งที่มาวัตถุดิบ: ${newSource.name} (${newSource.code}) - ${newSource.materialName}`);
     return newSource;
   };
@@ -935,7 +791,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...updated,
             updatedAt: new Date().toISOString(),
           };
-          runSyncWrite(saveRawMaterialSourceToFirestore(newS));
+          runSyncWrite(saveRawMaterialSourceToDb(newS));
           return newS;
         }
         return s;
@@ -947,7 +803,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteRawMaterialSource = (id: string): boolean => {
     const target = rawMaterialSources.find((s) => s.id === id);
     setRawMaterialSources((prev) => prev.filter((s) => s.id !== id));
-    runSyncWrite(deleteRawMaterialSourceFromFirestore(id));
+    runSyncWrite(deleteRawMaterialSourceFromDb(id));
     addAuditLog('DELETE_RAW_MATERIAL_SOURCE', 'inventory', `ลบแหล่งที่มาวัตถุดิบ: ${target?.name || id}`);
     return true;
   };
@@ -967,7 +823,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...customerData,
     };
     setCustomers((prev) => [newCustomer, ...(prev || [])]);
-    runSyncWrite(saveCustomerToFirestore(newCustomer));
+    runSyncWrite(saveCustomerToDb(newCustomer));
     addAuditLog('ADD_CUSTOMER', 'pos', `เพิ่มสมาชิกใหม่: ${newCustomer.name} (${newCustomer.phone})`);
     return newCustomer;
   };
@@ -977,7 +833,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (prev || []).map((c) => {
         if (c.id === id) {
           const updatedCustomer = { ...c, ...updated };
-          runSyncWrite(saveCustomerToFirestore(updatedCustomer));
+          runSyncWrite(saveCustomerToDb(updatedCustomer));
           return updatedCustomer;
         }
         return c;
@@ -989,7 +845,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteCustomer = (id: string): boolean => {
     const target = (customers || []).find((c) => c.id === id);
     setCustomers((prev) => (prev || []).filter((c) => c.id !== id));
-    runSyncWrite(deleteCustomerFromFirestore(id));
+    runSyncWrite(deleteCustomerFromDb(id));
     addAuditLog('DELETE_CUSTOMER', 'pos', `ลบสมาชิก: ${target?.name || id}`);
     return true;
   };
@@ -1025,7 +881,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomers((prev) =>
       (prev || []).map((c) => (c.id === customerId ? updatedCustomer : c))
     );
-    runSyncWrite(saveCustomerToFirestore(updatedCustomer));
+    runSyncWrite(saveCustomerToDb(updatedCustomer));
 
     addAuditLog(
       'ADJUST_CUSTOMER_POINTS',
@@ -1082,7 +938,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomers((prev) =>
       (prev || []).map((c) => (c.id === customerId ? updatedCustomer : c))
     );
-    runSyncWrite(saveCustomerToFirestore(updatedCustomer));
+    runSyncWrite(saveCustomerToDb(updatedCustomer));
 
     addAuditLog(
       'REDEEM_CUSTOMER_REWARD',
@@ -1115,7 +971,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...expenseData,
     };
     setExpenses((prev) => [newExpense, ...(prev || [])]);
-    runSyncWrite(saveExpenseToFirestore(newExpense));
+    runSyncWrite(saveExpenseToDb(newExpense));
     addAuditLog('ADD_EXPENSE', 'settings', `บันทึก${newExpense.type === 'income' ? 'รายรับ' : 'รายจ่าย'}: ${newExpense.title} (${newExpense.amount} บาท)`);
     return newExpense;
   };
@@ -1125,7 +981,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       (prev || []).map((e) => {
         if (e.id === id) {
           const updatedExp = { ...e, ...updated };
-          runSyncWrite(saveExpenseToFirestore(updatedExp));
+          runSyncWrite(saveExpenseToDb(updatedExp));
           return updatedExp;
         }
         return e;
@@ -1137,7 +993,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteExpense = (id: string): boolean => {
     const target = (expenses || []).find((e) => e.id === id);
     setExpenses((prev) => (prev || []).filter((e) => e.id !== id));
-    runSyncWrite(deleteExpenseFromFirestore(id));
+    runSyncWrite(deleteExpenseFromDb(id));
     addAuditLog('DELETE_EXPENSE', 'settings', `ลบรายการ: ${target?.title || id}`);
     return true;
   };
@@ -1148,7 +1004,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveStored('orders', []);
     setKitchenOrders([]);
     saveStored('kitchen', []);
-    runSyncWrite(resetAllSalesInFirestore(currentOrders));
+    runSyncWrite(resetAllSalesInDb(currentOrders));
     addAuditLog('RESET_SALES', 'pos', 'รีเซ็ทยอดขายและออเดอร์ทั้งหมดให้เป็น 0');
   };
 
@@ -1156,7 +1012,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const currentExpenses = [...(expenses || [])];
     setExpenses([]);
     saveStored('expenses', []);
-    runSyncWrite(resetAllExpensesInFirestore(currentExpenses));
+    runSyncWrite(resetAllExpensesInDb(currentExpenses));
     addAuditLog('RESET_EXPENSES', 'settings', 'รีเซ็ตสมุดบัญชีรายรับ-รายจ่ายทั้งหมดเป็น 0');
   };
 
@@ -1169,7 +1025,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveStored('kitchen', []);
     setExpenses([]);
     saveStored('expenses', []);
-    runSyncWrite(resetAllAccountingInFirestore(currentOrders, currentExpenses));
+    runSyncWrite(resetAllAccountingInDb(currentOrders, currentExpenses));
     addAuditLog('RESET_ACCOUNTING', 'pos', 'รีเซ็ตข้อมูลหน้าบัญชี ยอดขาย รายรับ-รายจ่ายทั้งหมดเป็น 0');
   };
 
@@ -1192,7 +1048,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setPromotions((prev) => [newPromo, ...prev]);
-    runSyncWrite(savePromotionToFirestore(newPromo));
+    runSyncWrite(savePromotionToDb(newPromo));
     addAuditLog(
       'CREATE_PROMOTION',
       'settings',
@@ -1208,7 +1064,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((p) => {
         if (p.id === id) {
           const updatedPromo = { ...p, ...updated, updatedAt: new Date().toISOString() };
-          runSyncWrite(savePromotionToFirestore(updatedPromo));
+          runSyncWrite(savePromotionToDb(updatedPromo));
           return updatedPromo;
         }
         return p;
@@ -1220,7 +1076,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deletePromotion = (id: string): boolean => {
     const target = promotions.find((p) => p.id === id);
     setPromotions((prev) => prev.filter((p) => p.id !== id));
-    runSyncWrite(deletePromotionFromFirestore(id));
+    runSyncWrite(deletePromotionFromDb(id));
     addAuditLog('DELETE_PROMOTION', 'settings', `ลบโปรโมชั่น: ${target?.name || id}`);
     return true;
   };
@@ -1230,7 +1086,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((p) => {
         if (p.id === id) {
           const updated = { ...p, enabled: !p.enabled, updatedAt: new Date().toISOString() };
-          runSyncWrite(savePromotionToFirestore(updated));
+          runSyncWrite(savePromotionToDb(updated));
           return updated;
         }
         return p;
@@ -1371,7 +1227,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ? 'available'
               : p.status;
           const updatedProduct = { ...p, stockQuantity: newQuantity, status: updatedStatus };
-          runSyncWrite(saveProductToFirestore(updatedProduct));
+          runSyncWrite(saveProductToDb(updatedProduct));
           return updatedProduct;
         }
         return p;
@@ -1389,7 +1245,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               remainingWeightGrams: newLotBal,
               status: newLotBal <= 0 ? 'depleted' : newLotBal < 10 ? 'low' : 'available',
             };
-            runSyncWrite(saveCannabisLotToFirestore(updatedLot));
+            runSyncWrite(saveCannabisLotToDb(updatedLot));
             return updatedLot;
           }
           return lot;
@@ -1414,7 +1270,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       userName: currentUser.name,
     };
     setStockMovements((prev) => [movement, ...prev]);
-    runSyncWrite(saveStockMovementToFirestore(movement));
+    runSyncWrite(saveStockMovementToDb(movement));
 
     // Audit Log
     addAuditLog(
@@ -1440,7 +1296,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setKratomBatches((prev) => [newBatch, ...prev]);
-    runSyncWrite(saveKratomBatchToFirestore(newBatch));
+    runSyncWrite(saveKratomBatchToDb(newBatch));
 
     // Deduct raw Kratom leaf stock if product exists
     const leafProduct = products.find(
@@ -1457,7 +1313,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               stockQuantity: newQty,
               status: newQty <= 0 ? 'out_of_stock' : p.status,
             };
-            runSyncWrite(saveProductToFirestore(updatedProd));
+            runSyncWrite(saveProductToDb(updatedProd));
             return updatedProd;
           }
           return p;
@@ -1480,7 +1336,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userName: currentUser.name,
       };
       setStockMovements((prev) => [kratomMov, ...prev]);
-      runSyncWrite(saveStockMovementToFirestore(kratomMov));
+      runSyncWrite(saveStockMovementToDb(kratomMov));
     }
 
     addAuditLog(
@@ -1505,7 +1361,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setCannabisLots((prev) => [newLot, ...prev]);
-    runSyncWrite(saveCannabisLotToFirestore(newLot));
+    runSyncWrite(saveCannabisLotToDb(newLot));
 
     // Update product stock
     setProducts((prev) =>
@@ -1522,7 +1378,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               coaNumber: newLot.coaNumber,
             },
           };
-          runSyncWrite(saveProductToFirestore(updatedProd));
+          runSyncWrite(saveProductToDb(updatedProd));
           return updatedProd;
         }
         return p;
@@ -1604,7 +1460,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               totalDiscountGiven: (p.totalDiscountGiven || 0) + applied.discountAmount,
               updatedAt: new Date().toISOString(),
             };
-            runSyncWrite(savePromotionToFirestore(updatedPromo));
+            runSyncWrite(savePromotionToDb(updatedPromo));
             return updatedPromo;
           }
           return p;
@@ -1629,7 +1485,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           status: updatedStatus,
         };
         updatedProducts[prodIndex] = updatedProd;
-        runSyncWrite(saveProductToFirestore(updatedProd));
+        runSyncWrite(saveProductToDb(updatedProd));
 
         // If Cannabis, deduct Lot weight
         if (prod.category === 'cannabis') {
@@ -1645,7 +1501,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               status: newLotWeight <= 0 ? 'depleted' : newLotWeight < 10 ? 'low' : 'available',
             };
             updatedLots[targetLotIndex] = updatedLot;
-            runSyncWrite(saveCannabisLotToFirestore(updatedLot));
+            runSyncWrite(saveCannabisLotToDb(updatedLot));
           }
         }
 
@@ -1693,7 +1549,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })),
       };
       setKitchenOrders((prev) => [kOrder, ...prev]);
-      runSyncWrite(saveKitchenOrderToFirestore(kOrder));
+      runSyncWrite(saveKitchenOrderToDb(kOrder));
     }
 
     // 3. Update Customer Points & Spend
@@ -1728,7 +1584,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCustomers((prev) =>
         (prev || []).map((c) => (c.id === customer.id ? updatedCustomer : c))
       );
-      runSyncWrite(saveCustomerToFirestore(updatedCustomer));
+      runSyncWrite(saveCustomerToDb(updatedCustomer));
 
       // Attach loyalty info to current sale order
       newOrder.pointsEarned = addedPoints;
@@ -1738,8 +1594,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 4. Save Order
     setOrders((prev) => [newOrder, ...prev]);
-    runSyncWrite(saveSaleToFirestore(newOrder));
-    newMovements.forEach((m) => runSyncWrite(saveStockMovementToFirestore(m)));
+    runSyncWrite(saveSaleToDb(newOrder));
+    newMovements.forEach((m) => runSyncWrite(saveStockMovementToDb(m)));
 
     // 4.1 Update Active Shift Statistics
     if (currentShift && currentShift.status === 'active') {
@@ -1844,7 +1700,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           userName: currentUser.name,
         };
         newMovements.push(movement);
-        runSyncWrite(saveStockMovementToFirestore(movement));
+        runSyncWrite(saveStockMovementToDb(movement));
       }
     });
 
@@ -1881,7 +1737,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCustomers((prev) =>
           (prev || []).map((c) => (c.id === cust.id ? updatedCustomer : c))
         );
-        runSyncWrite(saveCustomerToFirestore(updatedCustomer));
+        runSyncWrite(saveCustomerToDb(updatedCustomer));
       }
     }
 
@@ -1893,7 +1749,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) =>
       (prev || []).map((o) => (o.id === orderId ? updatedOrder : o))
     );
-    runSyncWrite(saveSaleToFirestore(updatedOrder));
+    runSyncWrite(saveSaleToDb(updatedOrder));
 
     // Audit Log
     addAuditLog(
@@ -1930,7 +1786,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           else if (anyPreparing) overallStatus = 'preparing';
 
           const updatedOrder = { ...order, items: updatedItems, overallStatus };
-          runSyncWrite(saveKitchenOrderToFirestore(updatedOrder));
+          runSyncWrite(saveKitchenOrderToDb(updatedOrder));
           return updatedOrder;
         }
         return order;

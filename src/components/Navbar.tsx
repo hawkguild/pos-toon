@@ -147,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 {isSyncing ? (
                   <span
                     className="bg-sky-100 text-sky-800 text-[11px] px-2.5 py-0.5 rounded-full border border-sky-300 font-bold flex items-center gap-1.5 shadow-2xs animate-pulse"
-                    title={`กำลังซิงค์ข้อมูล ${pendingSyncCount} รายการลง Cloud Firestore...`}
+                    title={`กำลังซิงค์ข้อมูล ${pendingSyncCount} รายการลง Supabase...`}
                   >
                     <RefreshCw className="w-3 h-3 text-sky-600 animate-spin" />
                     <span>กำลังซิงค์... ({pendingSyncCount})</span>
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
                 ) : isCloudSynced ? (
                   <span
                     className="bg-emerald-100 text-emerald-800 text-[11px] px-2.5 py-0.5 rounded-full border border-emerald-300 font-bold flex items-center gap-1 shadow-2xs"
-                    title={lastSyncTime ? `ซิงค์กับ Firestore ล่าสุดเมื่อ ${lastSyncTime}` : 'เชื่อมต่อระบบ Cloud เรียบร้อย'}
+                    title={lastSyncTime ? `ซิงค์กับ Supabase ล่าสุดเมื่อ ${lastSyncTime}` : 'เชื่อมต่อระบบ Cloud เรียบร้อย'}
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>เรียลไทม์ ซิงค์แล้ว</span>
